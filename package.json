@@ -1,0 +1,45 @@
+{
+  "name": "02-api-rest-nodejs",
+  "version": "1.0.0",
+  "description": "API REST com Fastify e TypeScript",
+  "type": "module",
+  "main": "dist/server.js",
+  "engines": {
+    "node": ">= 24"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "lint": "eslint src --ext .ts --fix",
+    "build": "tsup src --out-dir build",
+    
+    "start": "npm run migrate && node build/server.cjs",
+    "knex": "node --import tsx ./node_modules/knex/bin/cli.js",
+    "migrate": "npm run knex -- migrate:latest",
+
+
+    "test": "npx vitest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "dotenv": "^17.2.3",
+    "fastify": "^5.6.2",
+    "knex": "^3.1.0",
+    "pg": "^8.16.3",
+    "sqlite3": "^5.1.7",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@rocketseat/eslint-config": "^2.2.2",
+    "@types/node": "^24.10.0",
+    "@types/supertest": "^6.0.3",
+    "eslint": "^8.57.1",
+    "supertest": "^7.1.4",
+    "tsup": "^8.5.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.10"
+  }
+}
