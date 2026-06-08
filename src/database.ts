@@ -20,6 +20,10 @@ export const config: Knex.Config = {
     extension: 'ts',
     directory: './db/migrations',
   },
+  seeds: {
+    extension: 'ts',
+    directory: './db/seeds',
+  },
 }
 
 export const db = knex(config)
