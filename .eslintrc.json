@@ -1,5 +1,22 @@
 {
   "extends": [
     "@rocketseat/eslint-config/node"
+  ],
+  "rules": {
+    "camelcase": [
+      "error",
+      {
+        "properties": "never",
+        "ignoreDestructuring": true
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["src/routes/**/*.ts"],
+      "rules": {
+        "camelcase": "off"
+      }
+    }
   ]
 }

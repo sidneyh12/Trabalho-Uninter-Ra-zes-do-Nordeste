@@ -6,9 +6,21 @@ import swaggerUi from '@fastify/swagger-ui'
 
 import { env } from './env/index.js'
 import { authRoutes } from './routes/auth.js'
+import { estoqueRoutes } from './routes/estoque.js'
 import { helloRoutes } from './routes/hello.js'
+import { produtosRoutes } from './routes/produtos.js'
+import { unidadesRoutes } from './routes/unidades.js'
+import { usersRoutes } from './routes/users.js'
 
-export const app = fastify()
+// coerceTypes: quando vem ?page=1 na URL, o valor chega como string
+// e o Fastify converte pra número sozinho (útil na paginação).
+export const app = fastify({
+  ajv: {
+    customOptions: {
+      coerceTypes: true,
+    },
+  },
+})
 
 app.register(jwt, {
   secret: env.JWT_SECRET,
@@ -26,6 +38,10 @@ app.register(swagger, {
     tags: [
       { name: 'auth', description: 'Autenticação' },
       { name: 'hello', description: 'Rotas de exemplo' },
+      { name: 'usuarios', description: 'Gestão de usuários' },
+      { name: 'unidades', description: 'Unidades da rede' },
+      { name: 'produtos', description: 'Produtos do cardápio' },
+      { name: 'estoque', description: 'Estoque por unidade' },
     ],
     components: {
       securitySchemes: {
@@ -39,9 +55,14 @@ app.register(swagger, {
   },
 })
 
+// Todas as rotas da API ficam sob /v1 (versionamento).
 async function registerV1Routes(instance: FastifyInstance) {
   await instance.register(authRoutes, { prefix: '/auth' })
   await instance.register(helloRoutes)
+  await instance.register(usersRoutes)
+  await instance.register(unidadesRoutes)
+  await instance.register(produtosRoutes)
+  await instance.register(estoqueRoutes)
 }
 
 app.register(registerV1Routes, { prefix: '/v1' })

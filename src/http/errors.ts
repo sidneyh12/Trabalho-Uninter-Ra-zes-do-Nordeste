@@ -29,3 +29,85 @@ export function invalidPayloadError(): ErrorResponse {
     message: 'Email e senha devem ser enviados no formato correto.',
   }
 }
+
+// 403 — usuário logado mas sem permissão (ex.: GERENTE tentando criar usuário).
+export function forbiddenError(
+  message = 'Perfil sem permissao para executar esta acao.',
+): ErrorResponse {
+  return {
+    error: 'ACESSO_NEGADO',
+    message,
+  }
+}
+
+// Erros de validação dos CRUDs — cada um com mensagem que faz sentido pro front.
+
+export function invalidUserCreationPayloadError(): ErrorResponse {
+  return {
+    error: 'DADOS_INVALIDOS',
+    message:
+      'Dados de cadastro invalidos. Verifique nome, email, senha, perfil e data_nascimento.',
+  }
+}
+
+export function invalidUserUpdatePayloadError(): ErrorResponse {
+  return {
+    error: 'DADOS_INVALIDOS',
+    message:
+      'Dados de atualizacao invalidos. Envie ao menos um campo valido (nome, email, senha, perfil, data_nascimento).',
+  }
+}
+
+// --- Unidades ---
+
+export function invalidUnidadeCreationPayloadError(): ErrorResponse {
+  return {
+    error: 'DADOS_INVALIDOS',
+    message:
+      'Dados invalidos. Informe nome, endereco e tipo_cozinha; opcionalmente ativa (boolean).',
+  }
+}
+
+export function invalidUnidadeUpdatePayloadError(): ErrorResponse {
+  return {
+    error: 'DADOS_INVALIDOS',
+    message:
+      'Dados de atualizacao invalidos. Envie ao menos um campo valido (nome, endereco, tipo_cozinha, ativa).',
+  }
+}
+
+// --- Produtos ---
+
+export function invalidProdutoCreationPayloadError(): ErrorResponse {
+  return {
+    error: 'DADOS_INVALIDOS',
+    message:
+      'Dados invalidos. Informe nome, preco_base (maior que zero) e categoria; descricao e opcional.',
+  }
+}
+
+export function invalidProdutoUpdatePayloadError(): ErrorResponse {
+  return {
+    error: 'DADOS_INVALIDOS',
+    message:
+      'Dados de atualizacao invalidos. Envie ao menos um campo valido (nome, descricao, preco_base, categoria).',
+  }
+}
+
+// --- Estoque ---
+
+export function invalidEstoqueCreationPayloadError(): ErrorResponse {
+  return {
+    error: 'DADOS_INVALIDOS',
+    message:
+      'Dados invalidos. Informe unidade_id e produto_id (UUID); quantidade_atual e ponto_reposicao devem ser inteiros >= 0.',
+  }
+}
+
+export function invalidEstoqueUpdatePayloadError(): ErrorResponse {
+  return {
+    error: 'DADOS_INVALIDOS',
+    message:
+      'Dados de atualizacao invalidos. Envie ao menos um campo valido (unidade_id, produto_id, quantidade_atual, ponto_reposicao).',
+  }
+}
