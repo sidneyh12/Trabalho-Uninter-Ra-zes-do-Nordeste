@@ -8,6 +8,7 @@ import { env } from './env/index.js'
 import { authRoutes } from './routes/auth.js'
 import { estoqueRoutes } from './routes/estoque.js'
 import { helloRoutes } from './routes/hello.js'
+import { movimentacoesEstoqueRoutes } from './routes/movimentacoes-estoque.js'
 import { produtosRoutes } from './routes/produtos.js'
 import { unidadesRoutes } from './routes/unidades.js'
 import { usersRoutes } from './routes/users.js'
@@ -42,6 +43,10 @@ app.register(swagger, {
       { name: 'unidades', description: 'Unidades da rede' },
       { name: 'produtos', description: 'Produtos do cardápio' },
       { name: 'estoque', description: 'Estoque por unidade' },
+      {
+        name: 'movimentacoes-estoque',
+        description: 'Movimentações de estoque',
+      },
     ],
     components: {
       securitySchemes: {
@@ -63,6 +68,7 @@ async function registerV1Routes(instance: FastifyInstance) {
   await instance.register(unidadesRoutes)
   await instance.register(produtosRoutes)
   await instance.register(estoqueRoutes)
+  await instance.register(movimentacoesEstoqueRoutes)
 }
 
 app.register(registerV1Routes, { prefix: '/v1' })

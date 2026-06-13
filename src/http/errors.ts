@@ -111,3 +111,21 @@ export function invalidEstoqueUpdatePayloadError(): ErrorResponse {
       'Dados de atualizacao invalidos. Envie ao menos um campo valido (unidade_id, produto_id, quantidade_atual, ponto_reposicao).',
   }
 }
+
+// --- Movimentações de estoque ---
+
+export function invalidMovimentacaoEstoqueCreationPayloadError(): ErrorResponse {
+  return {
+    error: 'DADOS_INVALIDOS',
+    message:
+      'Dados invalidos. Informe unidade_id, produto_id, tipo_movimentacao (ENTRADA|SAIDA) e quantidade inteira >= 1; motivo e opcional.',
+  }
+}
+
+export function invalidMovimentacaoEstoqueUpdatePayloadError(): ErrorResponse {
+  return {
+    error: 'DADOS_INVALIDOS',
+    message:
+      'Dados de atualizacao invalidos. Envie ao menos um campo valido (unidade_id, produto_id, tipo_movimentacao, quantidade, motivo).',
+  }
+}
