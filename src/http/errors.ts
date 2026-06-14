@@ -129,3 +129,21 @@ export function invalidMovimentacaoEstoqueUpdatePayloadError(): ErrorResponse {
       'Dados de atualizacao invalidos. Envie ao menos um campo valido (unidade_id, produto_id, tipo_movimentacao, quantidade, motivo).',
   }
 }
+
+// --- Pedidos ---
+
+export function invalidPedidoCreationPayloadError(): ErrorResponse {
+  return {
+    error: 'DADOS_INVALIDOS',
+    message:
+      'Dados invalidos. Informe unidade_id, canalPedido (APP|TOTEM|BALCAO|PICKUP|WEB) e itens com produto_id e quantidade >= 1.',
+  }
+}
+
+export function invalidPedidoUpdatePayloadError(): ErrorResponse {
+  return {
+    error: 'DADOS_INVALIDOS',
+    message:
+      'Informe status valido (AGUARDANDO_PAGAMENTO|EM_PREPARO|PRONTO|ENTREGUE|CANCELADO).',
+  }
+}
