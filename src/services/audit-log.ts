@@ -28,6 +28,9 @@ export const AcaoAuditoria = {
   PEDIDO_CREATE: 'PEDIDO_CREATE',
   PEDIDO_STATUS_UPDATE: 'PEDIDO_STATUS_UPDATE',
   PEDIDO_DELETE: 'PEDIDO_DELETE',
+  PAGAMENTO_CREATE: 'PAGAMENTO_CREATE',
+  PAGAMENTO_UPDATE: 'PAGAMENTO_UPDATE',
+  PAGAMENTO_DELETE: 'PAGAMENTO_DELETE',
 } as const
 
 // Pega o id do usuário que está logado (campo "sub" dentro do JWT).

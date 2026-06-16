@@ -147,3 +147,37 @@ export function invalidPedidoUpdatePayloadError(): ErrorResponse {
       'Informe status valido (AGUARDANDO_PAGAMENTO|EM_PREPARO|PRONTO|ENTREGUE|CANCELADO).',
   }
 }
+
+// --- Pagamentos ---
+
+export function invalidPagamentoCreationPayloadError(): ErrorResponse {
+  return {
+    error: 'DADOS_INVALIDOS',
+    message:
+      'Dados invalidos. Informe pedido_id, metodo_pagamento e resultado_mock (APROVADO|NEGADO); external_id e payload_retorno sao opcionais.',
+  }
+}
+
+export function pagamentoPedidoStatusInvalidoError(
+  statusAtual: string,
+): ErrorResponse {
+  return {
+    error: 'PEDIDO_STATUS_INVALIDO',
+    message: `Pagamento so pode ser registrado para pedido em AGUARDANDO_PAGAMENTO. Status atual: ${statusAtual}.`,
+  }
+}
+
+export function pagamentoJaRegistradoError(): ErrorResponse {
+  return {
+    error: 'PAGAMENTO_JA_REGISTRADO',
+    message: 'Este pedido ja possui pagamento registrado.',
+  }
+}
+
+export function invalidPagamentoUpdatePayloadError(): ErrorResponse {
+  return {
+    error: 'DADOS_INVALIDOS',
+    message:
+      'Dados de atualizacao invalidos. Envie ao menos um campo valido (metodo_pagamento, external_id, payload_retorno).',
+  }
+}

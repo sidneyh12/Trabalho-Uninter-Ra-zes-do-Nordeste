@@ -4,11 +4,21 @@ import type { Knex } from 'knex'
 import { z } from 'zod'
 
 import { db } from '../database.js'
-import { forbiddenError } from '../http/errors.js'
+import {
+  forbiddenError,
+  invalidPagamentoCreationPayloadError,
+  invalidPagamentoUpdatePayloadError,
+  pagamentoJaRegistradoError,
+  pagamentoPedidoStatusInvalidoError,
+} from '../http/errors.js'
 import { authenticate } from '../middlewares/authenticate.js'
+import {
+  AcaoAuditoria,
+  getUsuarioIdFromRequest,
+  registrarLogAuditoria,
+} from '../services/audit-log.js'
 
-// Pagamentos mock — parte 4/4: CRUD completo nas rotas.
-// Erros centralizados, auditoria, registro no app e README no commit final.
+// Pagamentos mock — simula gateway (APROVADO/NEGADO) e atualiza o pedido.
 
 const errorResponseSchema = {
   type: 'object',
@@ -399,11 +409,7 @@ export async function pagamentosRoutes(app: FastifyInstance) {
     },
     async (request, reply) => {
       if (request.validationError) {
-        return reply.status(400).send({
-          error: 'DADOS_INVALIDOS',
-          message:
-            'Dados invalidos. Informe pedido_id, metodo_pagamento e resultado_mock (APROVADO|NEGADO); external_id e payload_retorno sao opcionais.',
-        })
+        return reply.status(400).send(invalidPagamentoCreationPayloadError())
       }
 
       const sub = getSub(request)
@@ -423,11 +429,7 @@ export async function pagamentosRoutes(app: FastifyInstance) {
       })
       const parsedBody = bodySchema.safeParse(request.body)
       if (!parsedBody.success) {
-        return reply.status(400).send({
-          error: 'DADOS_INVALIDOS',
-          message:
-            'Dados invalidos. Informe pedido_id, metodo_pagamento e resultado_mock (APROVADO|NEGADO); external_id e payload_retorno sao opcionais.',
-        })
+        return reply.status(400).send(invalidPagamentoCreationPayloadError())
       }
 
       const pedido = await db('pedidos')
@@ -449,20 +451,16 @@ export async function pagamentosRoutes(app: FastifyInstance) {
 
       const statusPedido = String((pedido as { status: string }).status)
       if (statusPedido !== 'AGUARDANDO_PAGAMENTO') {
-        return reply.status(409).send({
-          error: 'PEDIDO_STATUS_INVALIDO',
-          message: `Pagamento so pode ser registrado para pedido em AGUARDANDO_PAGAMENTO. Status atual: ${statusPedido}.`,
-        })
+        return reply
+          .status(409)
+          .send(pagamentoPedidoStatusInvalidoError(statusPedido))
       }
 
       const existing = await db('pagamentos')
         .where({ pedido_id: parsedBody.data.pedido_id })
         .first()
       if (existing) {
-        return reply.status(409).send({
-          error: 'PAGAMENTO_JA_REGISTRADO',
-          message: 'Este pedido ja possui pagamento registrado.',
-        })
+        return reply.status(409).send(pagamentoJaRegistradoError())
       }
 
       const pagamentoId = randomUUID()
@@ -523,6 +521,20 @@ export async function pagamentosRoutes(app: FastifyInstance) {
           .first()
         return created as Record<string, unknown>
       })
+
+      const actorId = getUsuarioIdFromRequest(request)
+      if (actorId) {
+        await registrarLogAuditoria(request.log, {
+          usuarioId: actorId,
+          acao: AcaoAuditoria.PAGAMENTO_CREATE,
+          detalhes: JSON.stringify({
+            pagamento_id: pagamentoId,
+            pedido_id: parsedBody.data.pedido_id,
+            resultado_mock: parsedBody.data.resultado_mock,
+          }),
+          ipOrigem: request.ip,
+        })
+      }
 
       const pedidoAtualizado = await db('pedidos')
         .where({ id: parsedBody.data.pedido_id })
@@ -587,11 +599,7 @@ export async function pagamentosRoutes(app: FastifyInstance) {
     },
     async (request, reply) => {
       if (request.validationError) {
-        return reply.status(400).send({
-          error: 'DADOS_INVALIDOS',
-          message:
-            'Dados de atualizacao invalidos. Envie ao menos um campo valido (metodo_pagamento, external_id, payload_retorno).',
-        })
+        return reply.status(400).send(invalidPagamentoUpdatePayloadError())
       }
       if (!podeOperarPagamento(request)) {
         return reply.status(403).send(forbiddenError())
@@ -620,11 +628,7 @@ export async function pagamentosRoutes(app: FastifyInstance) {
         })
       }
       if (!parsedBody.success) {
-        return reply.status(400).send({
-          error: 'DADOS_INVALIDOS',
-          message:
-            'Dados de atualizacao invalidos. Envie ao menos um campo valido (metodo_pagamento, external_id, payload_retorno).',
-        })
+        return reply.status(400).send(invalidPagamentoUpdatePayloadError())
       }
 
       const row = await db('pagamentos')
@@ -652,6 +656,19 @@ export async function pagamentosRoutes(app: FastifyInstance) {
       const updated = await db('pagamentos')
         .where({ id: parsedParams.data.id })
         .first()
+
+      const actorId = getUsuarioIdFromRequest(request)
+      if (actorId) {
+        await registrarLogAuditoria(request.log, {
+          usuarioId: actorId,
+          acao: AcaoAuditoria.PAGAMENTO_UPDATE,
+          detalhes: JSON.stringify({
+            pagamento_id: parsedParams.data.id,
+            campos: Object.keys(patch),
+          }),
+          ipOrigem: request.ip,
+        })
+      }
 
       return reply
         .status(200)
@@ -733,6 +750,16 @@ export async function pagamentosRoutes(app: FastifyInstance) {
       }
 
       await db('pagamentos').where({ id: parsedParams.data.id }).del()
+
+      const actorId = getUsuarioIdFromRequest(request)
+      if (actorId) {
+        await registrarLogAuditoria(request.log, {
+          usuarioId: actorId,
+          acao: AcaoAuditoria.PAGAMENTO_DELETE,
+          detalhes: JSON.stringify({ pagamento_id: parsedParams.data.id }),
+          ipOrigem: request.ip,
+        })
+      }
 
       return reply.status(204).send()
     },

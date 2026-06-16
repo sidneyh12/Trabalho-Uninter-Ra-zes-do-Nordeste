@@ -2,7 +2,7 @@
 
 API REST em **Node.js**, **Fastify**, **Knex** e **JWT**, desenvolvida no contexto do Projeto Multidisciplinar de Back-End da Uninter.
 
-O schema completo do banco já existe nas migrations; as rotas implementadas cobrem **autenticação**, **usuários**, **unidades**, **produtos**, **estoque**, **movimentações de estoque**, **campanhas** e **pedidos**.
+O schema completo do banco já existe nas migrations; as rotas implementadas cobrem **autenticação**, **usuários**, **unidades**, **produtos**, **estoque**, **movimentações de estoque**, **campanhas**, **pedidos** e **pagamentos**.
 
 **Todas as rotas REST ficam sob o prefixo `/v1`**, exceto a documentação Swagger em `/documentation`.
 
@@ -132,6 +132,23 @@ Cada um com `GET`, `GET /:id`, `POST`, `PUT /:id`, `DELETE /:id`.
 
 **Status:** `AGUARDANDO_PAGAMENTO` → `EM_PREPARO` → `PRONTO` → `ENTREGUE` / `CANCELADO`
 
+### Pagamentos (`/v1/pagamentos`) — mock de gateway
+
+| Método | Quem pode | Descrição |
+|--------|-----------|-----------|
+| `GET` | Por perfil | ADMIN/GERENTE: todos; demais: só dos próprios pedidos |
+| `GET /:id` | Por perfil | Detalhe por UUID |
+| `POST` | Dono do pedido ou **ADMIN**/**GERENTE**/**BALCAO** | Mock `resultado_mock`: `APROVADO` ou `NEGADO` |
+| `PUT /:id` | **ADMIN**, **GERENTE** ou **BALCAO** | Atualiza metadados (`metodo_pagamento`, `external_id`, `payload_retorno`) |
+| `DELETE /:id` | **ADMIN** | Remove apenas pagamento **NEGADO** |
+
+**Regras do POST:**
+
+- Pedido deve estar em `AGUARDANDO_PAGAMENTO`; um pagamento por pedido
+- **APROVADO** → pedido `EM_PREPARO`; credita fidelidade se houver consentimento
+- **NEGADO** → pedido `CANCELADO` e restaura estoque
+- Resposta `201`: `{ pagamento, pedido }`
+
 ---
 
 ## Exemplos rápidos
@@ -159,6 +176,17 @@ POST /v1/pedidos
 }
 ```
 
+### Pagamento mock
+
+```json
+POST /v1/pagamentos
+{
+  "pedido_id": "<uuid-do-pedido>",
+  "metodo_pagamento": "PIX",
+  "resultado_mock": "APROVADO"
+}
+```
+
 ---
 
 ## Estrutura do projeto
@@ -167,7 +195,8 @@ POST /v1/pedidos
 src/
   app.ts              # Fastify, JWT, Swagger, rotas /v1
   routes/             # auth, hello, users, unidades, produtos,
-                        # estoque, movimentacoes-estoque, campanhas, pedidos
+                        # estoque, movimentacoes-estoque, campanhas,
+                        # pedidos, pagamentos
   middlewares/        # authenticate (JWT)
   authz/              # perfis (ADMIN, GERENTE)
   http/               # erros padronizados
@@ -185,13 +214,13 @@ db/
 **Implementado:**
 
 - Autenticação JWT + Swagger (`/documentation`)
-- CRUD: usuários, unidades, produtos, estoque, movimentações, campanhas, pedidos
+- CRUD: usuários, unidades, produtos, estoque, movimentações, campanhas, pedidos, pagamentos
 - Pedidos com itens, desconto de campanha, baixa/devolução de estoque
+- Pagamentos mock com transição de status do pedido e crédito de fidelidade
 - Auditoria nas mutações; rotas em **`/v1`**
 
 **Ainda falta** (migrations já existem):
 
-- **Pagamentos** mock (`/v1/pagamentos`)
 - **Fidelidade** (`/v1/fidelidade`)
 - **Logs de auditoria** — leitura (`GET /v1/logs-auditoria`)
 - Rota raiz `GET /`
