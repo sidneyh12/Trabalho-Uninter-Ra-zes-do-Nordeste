@@ -7,8 +7,8 @@ import { db } from '../database.js'
 import { forbiddenError } from '../http/errors.js'
 import { authenticate } from '../middlewares/authenticate.js'
 
-// Pagamentos mock — parte 2/4: GET + POST (registro mock).
-// PUT e DELETE nos próximos commits.
+// Pagamentos mock — parte 3/4: GET + POST + PUT (metadados).
+// DELETE no próximo commit.
 // Erros específicos, auditoria, Swagger e README no commit final.
 
 const errorResponseSchema = {
@@ -537,6 +537,121 @@ export async function pagamentosRoutes(app: FastifyInstance) {
           pedidoAtualizado as Record<string, unknown>,
         ),
       })
+    },
+  )
+
+  // Só metadados — status_pagamento não muda aqui; equipe de loja
+  app.put(
+    '/pagamentos/:id',
+    {
+      preHandler: [authenticate],
+      attachValidation: true,
+      schema: {
+        tags: ['pagamentos'],
+        summary: 'Atualizar metadados de pagamento',
+        description:
+          'Atualiza metodo_pagamento, external_id e payload_retorno. Somente ADMIN, GERENTE ou BALCAO.',
+        security: [{ bearerAuth: [] }],
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: { id: { type: 'string', format: 'uuid' } },
+        },
+        body: {
+          type: 'object',
+          properties: {
+            metodo_pagamento: { type: 'string', minLength: 1 },
+            external_id: { type: ['string', 'null'] },
+            payload_retorno: { type: ['string', 'null'] },
+          },
+          minProperties: 1,
+        },
+        response: {
+          200: pagamentoResponseProps,
+          400: { description: 'Payload invalido', ...errorResponseSchema },
+          401: {
+            description: 'Token invalido/ausente',
+            ...errorResponseSchema,
+          },
+          403: { description: 'Sem permissao', ...errorResponseSchema },
+          404: {
+            description: 'Pagamento nao encontrado',
+            ...errorResponseSchema,
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      if (request.validationError) {
+        return reply.status(400).send({
+          error: 'DADOS_INVALIDOS',
+          message:
+            'Dados de atualizacao invalidos. Envie ao menos um campo valido (metodo_pagamento, external_id, payload_retorno).',
+        })
+      }
+      if (!podeOperarPagamento(request)) {
+        return reply.status(403).send(forbiddenError())
+      }
+
+      const paramsSchema = z.object({ id: z.string().uuid() })
+      const bodySchema = z
+        .object({
+          metodo_pagamento: z.string().trim().min(1).optional(),
+          external_id: z.union([z.string(), z.null()]).optional(),
+          payload_retorno: z.union([z.string(), z.null()]).optional(),
+        })
+        .refine(
+          (d) =>
+            d.metodo_pagamento !== undefined ||
+            d.external_id !== undefined ||
+            d.payload_retorno !== undefined,
+        )
+
+      const parsedParams = paramsSchema.safeParse(request.params)
+      const parsedBody = bodySchema.safeParse(request.body)
+      if (!parsedParams.success) {
+        return reply.status(400).send({
+          error: 'DADOS_INVALIDOS',
+          message: 'O id na URL deve ser um UUID valido.',
+        })
+      }
+      if (!parsedBody.success) {
+        return reply.status(400).send({
+          error: 'DADOS_INVALIDOS',
+          message:
+            'Dados de atualizacao invalidos. Envie ao menos um campo valido (metodo_pagamento, external_id, payload_retorno).',
+        })
+      }
+
+      const row = await db('pagamentos')
+        .where({ id: parsedParams.data.id })
+        .first()
+      if (!row) {
+        return reply.status(404).send({
+          error: 'NAO_ENCONTRADO',
+          message: 'Pagamento nao encontrado.',
+        })
+      }
+
+      const patch: Record<string, unknown> = {}
+      if (parsedBody.data.metodo_pagamento !== undefined) {
+        patch.metodo_pagamento = parsedBody.data.metodo_pagamento
+      }
+      if (parsedBody.data.external_id !== undefined) {
+        patch.external_id = parsedBody.data.external_id
+      }
+      if (parsedBody.data.payload_retorno !== undefined) {
+        patch.payload_retorno = parsedBody.data.payload_retorno
+      }
+
+      await db('pagamentos').where({ id: parsedParams.data.id }).update(patch)
+      const updated = await db('pagamentos')
+        .where({ id: parsedParams.data.id })
+        .first()
+
+      return reply
+        .status(200)
+        .send(serializePagamento(updated as Record<string, unknown>))
     },
   )
 }
