@@ -7,9 +7,8 @@ import { db } from '../database.js'
 import { forbiddenError } from '../http/errors.js'
 import { authenticate } from '../middlewares/authenticate.js'
 
-// Pagamentos mock — parte 3/4: GET + POST + PUT (metadados).
-// DELETE no próximo commit.
-// Erros específicos, auditoria, Swagger e README no commit final.
+// Pagamentos mock — parte 4/4: CRUD completo nas rotas.
+// Erros centralizados, auditoria, registro no app e README no commit final.
 
 const errorResponseSchema = {
   type: 'object',
@@ -88,6 +87,11 @@ function podeVerTodosPagamentos(request: { user?: unknown }): boolean {
 function podeOperarPagamento(request: { user?: unknown }): boolean {
   const perfil = (request.user as { perfil?: string } | undefined)?.perfil
   return perfil === 'ADMIN' || perfil === 'GERENTE' || perfil === 'BALCAO'
+}
+
+function isAdmin(request: { user?: unknown }): boolean {
+  const perfil = (request.user as { perfil?: string } | undefined)?.perfil
+  return perfil === 'ADMIN'
 }
 
 function getSub(request: { user?: unknown }): string | undefined {
@@ -652,6 +656,85 @@ export async function pagamentosRoutes(app: FastifyInstance) {
       return reply
         .status(200)
         .send(serializePagamento(updated as Record<string, unknown>))
+    },
+  )
+
+  // Ajuste administrativo — só NEGADO; APROVADO não pode ser removido
+  app.delete(
+    '/pagamentos/:id',
+    {
+      preHandler: [authenticate],
+      attachValidation: true,
+      schema: {
+        tags: ['pagamentos'],
+        summary: 'Remover pagamento (somente ADMIN)',
+        description:
+          'Remove pagamento NEGADO para ajuste administrativo. Pagamento APROVADO nao pode ser removido.',
+        security: [{ bearerAuth: [] }],
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: { id: { type: 'string', format: 'uuid' } },
+        },
+        response: {
+          204: { description: 'Pagamento removido' },
+          400: { description: 'Id invalido', ...errorResponseSchema },
+          401: {
+            description: 'Token invalido/ausente',
+            ...errorResponseSchema,
+          },
+          403: { description: 'Sem permissao', ...errorResponseSchema },
+          404: {
+            description: 'Pagamento nao encontrado',
+            ...errorResponseSchema,
+          },
+          409: { description: 'Conflito', ...errorResponseSchema },
+        },
+      },
+    },
+    async (request, reply) => {
+      if (request.validationError) {
+        return reply.status(400).send({
+          error: 'DADOS_INVALIDOS',
+          message: 'O id na URL deve ser um UUID valido.',
+        })
+      }
+      if (!isAdmin(request)) {
+        return reply.status(403).send(forbiddenError())
+      }
+
+      const paramsSchema = z.object({ id: z.string().uuid() })
+      const parsedParams = paramsSchema.safeParse(request.params)
+      if (!parsedParams.success) {
+        return reply.status(400).send({
+          error: 'DADOS_INVALIDOS',
+          message: 'O id na URL deve ser um UUID valido.',
+        })
+      }
+
+      const row = await db('pagamentos')
+        .where({ id: parsedParams.data.id })
+        .first()
+      if (!row) {
+        return reply.status(404).send({
+          error: 'NAO_ENCONTRADO',
+          message: 'Pagamento nao encontrado.',
+        })
+      }
+
+      if (
+        String((row as { status_pagamento: string }).status_pagamento) ===
+        'APROVADO'
+      ) {
+        return reply.status(409).send({
+          error: 'CONFLITO',
+          message: 'Pagamento aprovado nao pode ser removido.',
+        })
+      }
+
+      await db('pagamentos').where({ id: parsedParams.data.id }).del()
+
+      return reply.status(204).send()
     },
   )
 }
