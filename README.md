@@ -2,7 +2,7 @@
 
 API REST em **Node.js**, **Fastify**, **Knex** e **JWT**, desenvolvida no contexto do Projeto Multidisciplinar de Back-End da Uninter.
 
-O schema completo do banco já existe nas migrations; as rotas implementadas cobrem **autenticação**, **usuários**, **unidades**, **produtos**, **estoque**, **movimentações de estoque**, **campanhas**, **pedidos** e **pagamentos**.
+O schema completo do banco já existe nas migrations; as rotas implementadas cobrem **autenticação**, **usuários**, **unidades**, **produtos**, **estoque**, **movimentações de estoque**, **campanhas**, **pedidos**, **pagamentos** e **fidelidade**.
 
 **Todas as rotas REST ficam sob o prefixo `/v1`**, exceto a documentação Swagger em `/documentation`.
 
@@ -149,6 +149,18 @@ Cada um com `GET`, `GET /:id`, `POST`, `PUT /:id`, `DELETE /:id`.
 - **NEGADO** → pedido `CANCELADO` e restaura estoque
 - Resposta `201`: `{ pagamento, pedido }`
 
+### Fidelidade (`/v1/fidelidade`)
+
+| Método | Quem pode | Descrição |
+|--------|-----------|-----------|
+| `GET` | Por perfil | ADMIN/GERENTE: todos; CLIENTE: só o próprio |
+| `GET /:id` | Por perfil | Detalhe por UUID |
+| `POST` | **ADMIN** ou **GERENTE** | Cria registro (um por cliente) |
+| `PUT /:id` | **ADMIN** ou **GERENTE** | Saldo, consentimento LGPD, `ajuste_pontos_delta` |
+| `DELETE /:id` | **ADMIN** | Remove registro |
+
+**Consentimento:** com `consentimento_explicitado: true`, pagamentos aprovados creditam pontos (`floor(valor_total)`).
+
 ---
 
 ## Exemplos rápidos
@@ -187,6 +199,16 @@ POST /v1/pagamentos
 }
 ```
 
+### Cadastro de fidelidade
+
+```json
+POST /v1/fidelidade
+{
+  "cliente_id": "33333333-3333-3333-3333-333333333333",
+  "consentimento_explicitado": true
+}
+```
+
 ---
 
 ## Estrutura do projeto
@@ -196,7 +218,7 @@ src/
   app.ts              # Fastify, JWT, Swagger, rotas /v1
   routes/             # auth, hello, users, unidades, produtos,
                         # estoque, movimentacoes-estoque, campanhas,
-                        # pedidos, pagamentos
+                        # pedidos, pagamentos, fidelidade
   middlewares/        # authenticate (JWT)
   authz/              # perfis (ADMIN, GERENTE)
   http/               # erros padronizados
@@ -214,14 +236,14 @@ db/
 **Implementado:**
 
 - Autenticação JWT + Swagger (`/documentation`)
-- CRUD: usuários, unidades, produtos, estoque, movimentações, campanhas, pedidos, pagamentos
+- CRUD: usuários, unidades, produtos, estoque, movimentações, campanhas, pedidos, pagamentos, fidelidade
 - Pedidos com itens, desconto de campanha, baixa/devolução de estoque
 - Pagamentos mock com transição de status do pedido e crédito de fidelidade
+- Programa de fidelidade com consentimento LGPD e ajuste de pontos
 - Auditoria nas mutações; rotas em **`/v1`**
 
 **Ainda falta** (migrations já existem):
 
-- **Fidelidade** (`/v1/fidelidade`)
 - **Logs de auditoria** — leitura (`GET /v1/logs-auditoria`)
 - Rota raiz `GET /`
 

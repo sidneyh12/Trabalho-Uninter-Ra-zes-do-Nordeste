@@ -8,6 +8,7 @@ import { env } from './env/index.js'
 import { authRoutes } from './routes/auth.js'
 import { campanhasRoutes } from './routes/campanhas.js'
 import { estoqueRoutes } from './routes/estoque.js'
+import { fidelidadeRoutes } from './routes/fidelidade.js'
 import { helloRoutes } from './routes/hello.js'
 import { movimentacoesEstoqueRoutes } from './routes/movimentacoes-estoque.js'
 import { pagamentosRoutes } from './routes/pagamentos.js'
@@ -53,6 +54,7 @@ app.register(swagger, {
       { name: 'campanhas', description: 'Campanhas promocionais' },
       { name: 'pedidos', description: 'Pedidos e itens' },
       { name: 'pagamentos', description: 'Pagamentos mock' },
+      { name: 'fidelidade', description: 'Programa de fidelidade' },
     ],
     components: {
       securitySchemes: {
@@ -78,6 +80,7 @@ async function registerV1Routes(instance: FastifyInstance) {
   await instance.register(campanhasRoutes)
   await instance.register(pedidosRoutes)
   await instance.register(pagamentosRoutes)
+  await instance.register(fidelidadeRoutes)
 }
 
 app.register(registerV1Routes, { prefix: '/v1' })

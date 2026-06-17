@@ -181,3 +181,21 @@ export function invalidPagamentoUpdatePayloadError(): ErrorResponse {
       'Dados de atualizacao invalidos. Envie ao menos um campo valido (metodo_pagamento, external_id, payload_retorno).',
   }
 }
+
+// --- Fidelidade ---
+
+export function invalidFidelidadeCreationPayloadError(): ErrorResponse {
+  return {
+    error: 'DADOS_INVALIDOS',
+    message:
+      'Dados invalidos. Informe cliente_id (UUID); saldo_pontos >= 0 e campos de consentimento opcionais.',
+  }
+}
+
+export function invalidFidelidadeUpdatePayloadError(): ErrorResponse {
+  return {
+    error: 'DADOS_INVALIDOS',
+    message:
+      'Dados de atualizacao invalidos. Envie ao menos um campo valido (saldo_pontos, ajuste_pontos_delta, consentimento_explicitado, data_consentimento).',
+  }
+}
