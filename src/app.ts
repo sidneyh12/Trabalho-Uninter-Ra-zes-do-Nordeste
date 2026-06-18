@@ -10,6 +10,7 @@ import { campanhasRoutes } from './routes/campanhas.js'
 import { estoqueRoutes } from './routes/estoque.js'
 import { fidelidadeRoutes } from './routes/fidelidade.js'
 import { helloRoutes } from './routes/hello.js'
+import { logsAuditoriaRoutes } from './routes/logs-auditoria.js'
 import { movimentacoesEstoqueRoutes } from './routes/movimentacoes-estoque.js'
 import { pagamentosRoutes } from './routes/pagamentos.js'
 import { pedidosRoutes } from './routes/pedidos.js'
@@ -55,6 +56,10 @@ app.register(swagger, {
       { name: 'pedidos', description: 'Pedidos e itens' },
       { name: 'pagamentos', description: 'Pagamentos mock' },
       { name: 'fidelidade', description: 'Programa de fidelidade' },
+      {
+        name: 'logs-auditoria',
+        description: 'Trilha de auditoria (somente leitura)',
+      },
     ],
     components: {
       securitySchemes: {
@@ -66,6 +71,11 @@ app.register(swagger, {
       },
     },
   },
+})
+
+// Raiz da API — fora do prefixo /v1.
+app.get('/', async (_request, reply) => {
+  return reply.send('Hello World')
 })
 
 // Todas as rotas da API ficam sob /v1 (versionamento).
@@ -81,6 +91,7 @@ async function registerV1Routes(instance: FastifyInstance) {
   await instance.register(pedidosRoutes)
   await instance.register(pagamentosRoutes)
   await instance.register(fidelidadeRoutes)
+  await instance.register(logsAuditoriaRoutes)
 }
 
 app.register(registerV1Routes, { prefix: '/v1' })

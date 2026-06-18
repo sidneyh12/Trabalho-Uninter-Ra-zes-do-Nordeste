@@ -1,178 +1,160 @@
 # Raízes do Nordeste — API (backend)
 
-API REST em **Node.js**, **Fastify**, **Knex** e **JWT**, desenvolvida no contexto do Projeto Multidisciplinar de Back-End da Uninter.
+Trabalho do **Projeto Multidisciplinar de Back-End (Uninter)**. API REST com **Node.js**, **Fastify**, **Knex** e **JWT** para a rede fictícia Raízes do Nordeste (pedidos multicanal, estoque por unidade, campanhas, pagamento simulado e programa de fidelidade).
 
-O schema completo do banco já existe nas migrations; as rotas implementadas cobrem **autenticação**, **usuários**, **unidades**, **produtos**, **estoque**, **movimentações de estoque**, **campanhas**, **pedidos**, **pagamentos** e **fidelidade**.
-
-**Todas as rotas REST ficam sob o prefixo `/v1`**, exceto a documentação Swagger em `/documentation`.
+As rotas “de verdade” ficam em **`/v1`**. Fora disso: **`GET /`** (texto `Hello World`) e o Swagger em **`/documentation`**.
 
 ---
 
-## Como executar localmente
+## Como rodar na sua máquina
 
-| # | O que fazer | Comando / detalhe |
-|---|-------------|-------------------|
-| 1 | **Requisitos** | [Node.js](https://nodejs.org/) **24+** e **npm** |
-| 2 | Instalar dependências | `npm install` |
-| 3 | Variáveis de ambiente | Copie `.env.example` para `.env` |
+Fiz na ordem abaixo e funcionou com SQLite. Tudo na **raiz** do projeto (onde está o `package.json`).
+
+| # | Passo | O que rodar |
+|---|--------|-------------|
+| 1 | Ter Node e npm | [Node.js](https://nodejs.org/) **24+** (é o que está no `package.json`) |
+| 2 | Instalar pacotes | `npm install` |
+| 3 | Criar o `.env` | Copie `.env.example` → `.env`<br>PowerShell: `Copy-Item .env.example .env` |
 | 4 | Criar tabelas | `npm run migrate` |
-| 5 | Dados de demonstração | `npm run seed` |
+| 5 | Usuários de teste | `npm run seed` |
 | 6 | Subir a API | `npm run dev` |
 
-**Conferência rápida:**
+**Conferir se deu certo:**
 
-- Servidor: `http://localhost:3333` (ou a `PORT` do `.env`)
-- Swagger: `http://localhost:3333/documentation`
+- `http://localhost:3333/` → deve aparecer `Hello World`
+- `http://localhost:3333/documentation` → Swagger
 - Login: `POST http://localhost:3333/v1/auth/login`
+
+**Se der erro:** confira se o `.env` está na raiz; se a pasta `db` existe (o SQLite grava em `./db/dev.db`); se a porta 3333 não está ocupada (mude `PORT` no `.env`).
 
 ---
 
 ## Variáveis de ambiente
 
-| Variável | Descrição |
-|----------|-----------|
+| Variável | Para que serve |
+|----------|----------------|
 | `NODE_ENV` | `development`, `test` ou `production` |
 | `DATABASE_CLIENT` | `sqlite` ou `pg` |
-| `DATABASE_URL` | SQLite: `./db/dev.db`. PostgreSQL: string de conexão |
-| `JWT_SECRET` | Segredo do JWT (mínimo 8 caracteres) |
-| `PORT` | Porta HTTP (padrão: `3333`) |
+| `DATABASE_URL` | SQLite: `./db/dev.db`. Postgres: string de conexão |
+| `JWT_SECRET` | Segredo do token (mínimo 8 caracteres) |
+| `PORT` | Porta do servidor (padrão `3333`) |
+
+Para testes existe `.env.test.example` — útil se for configurar Vitest depois.
 
 ---
 
-## Scripts
+## Scripts que usei no dia a dia
 
-| Comando | Descrição |
+| Comando | O que faz |
 |---------|-----------|
-| `npm run dev` | Servidor com reload |
+| `npm run dev` | API com reload automático |
 | `npm run migrate` | Aplica migrations |
-| `npm run seed` | Popula usuários demo e unidade |
-| `npm run lint` | ESLint |
-| `npm run build` | Build com tsup |
-| `npm test` | Vitest |
+| `npm run seed` | Cria usuários demo + unidade |
+| `npm run lint` | ESLint no `src/` |
+| `npm run build` | Gera pasta `build/` |
+| `npm test` | Vitest (ainda quase sem casos — ver abaixo) |
+| `npm run knex -- <cmd>` | Knex direto (rollback, etc.) |
 
 ---
 
-## Usuários de demonstração (login)
+## Login de demonstração
 
-Após `npm run seed`, use `POST /v1/auth/login`:
+Depois do `npm run seed`, use `POST /v1/auth/login` com JSON:
 
-| Perfil | E-mail | Senha | Uso principal |
-|--------|--------|--------|---------------|
-| **ADMIN** | `admin@raizes.com` | `Admin@123` | CRUD usuários; gestão ampla |
-| **GERENTE** | `gerente@raizes.com` | `Gerente@123` | Escrita em catálogo, estoque, campanhas |
-| **CLIENTE** | `cliente@raizes.com` | `Cliente@123` | Pedidos próprios; leitura de catálogo |
-| **COZINHA** | `cozinha@raizes.com` | `Cozinha@123` | Fila de pedidos da unidade vinculada |
-| **BALCAO** | `balcao@raizes.com` | `Balcao@123` | Fila de pedidos da unidade vinculada |
+| Perfil | E-mail | Senha | Uso no trabalho |
+|--------|--------|--------|-----------------|
+| **ADMIN** | `admin@raizes.com` | `Admin@123` | Usuários e quase tudo |
+| **GERENTE** | `gerente@raizes.com` | `Gerente@123` | Catálogo, estoque, campanhas, auditoria |
+| **CLIENTE** | `cliente@raizes.com` | `Cliente@123` | Pedidos e pagamentos próprios |
+| **COZINHA** | `cozinha@raizes.com` | `Cozinha@123` | Fila da unidade vinculada |
+| **BALCAO** | `balcao@raizes.com` | `Balcao@123` | Balcão + pagamentos da loja |
 
-> Senhas apenas para **desenvolvimento**.
+> Senhas só para **estudo/local**. Não usar em produção.
+
+A seed também cria a **Unidade Demo** (`aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa`) e liga COZINHA/BALCAO nela.
 
 ---
 
-## Endpoints implementados
+## Documentação da API (Swagger)
 
-Prefixo: **`/v1`**
+Com `npm run dev` rodando, abra:
 
-### Autenticação e exemplo
+`http://localhost:3333/documentation`
 
-| Método | Caminho | Autenticação | Descrição |
-|--------|---------|--------------|-----------|
-| `POST` | `/v1/auth/login` | Não | Login JWT (1h) |
-| `GET` | `/v1/hello` | Sim (JWT) | Rota protegida de exemplo |
+Lá dá para ver os endpoints, schemas e testar com Bearer token depois do login.
 
-### Usuários (`/v1/usuarios`) — somente **ADMIN**
+Tem também uma coleção Postman em `docs/colecao_postman.json` e diagramas do trabalho (`docs/*.png`).
 
-| Método | Descrição |
-|--------|-----------|
-| `GET` | Lista paginada |
-| `POST` | Cria usuário |
-| `PUT /:id` | Atualização parcial |
-| `DELETE /:id` | Remove (**204**) |
+---
 
-### Unidades, produtos, estoque — leitura: qualquer autenticado; escrita: **ADMIN** ou **GERENTE**
+## Endpoints (resumo)
 
-| Recurso | Caminho base |
-|---------|--------------|
+Prefixo: **`/v1`**. Quase tudo exige header `Authorization: Bearer <token>` (exceto login e `GET /`).
+
+| Método | Caminho | Quem / obs |
+|--------|---------|------------|
+| `GET` | `/` | Público — `Hello World` |
+| `POST` | `/v1/auth/login` | Público — retorna JWT |
+| `GET` | `/v1/hello` | Qualquer logado (exemplo) |
+
+### Usuários — `/v1/usuarios` (**ADMIN**)
+
+`GET` (lista), `POST`, `PUT /:id`, `DELETE /:id`
+
+### Unidades, produtos, estoque
+
+| Recurso | Caminho |
+|---------|---------|
 | Unidades | `/v1/unidades` |
 | Produtos | `/v1/produtos` |
 | Estoque | `/v1/estoque` |
 
-Cada um com `GET`, `GET /:id`, `POST`, `PUT /:id`, `DELETE /:id`.
+Leitura: qualquer autenticado. Escrita: **ADMIN** ou **GERENTE**. CRUD completo em cada um.
 
-### Movimentações de estoque (`/v1/movimentacoes-estoque`)
+### Movimentações — `/v1/movimentacoes-estoque`
 
-| Método | Quem pode | Descrição |
-|--------|-----------|-----------|
-| `GET` | Qualquer autenticado | Lista com filtros |
-| `GET /:id` | Qualquer autenticado | Detalhe |
-| `POST` | **ADMIN** ou **GERENTE** | ENTRADA/SAIDA — atualiza estoque |
-| `PUT /:id` | **ADMIN** ou **GERENTE** | Atualiza (reverte e reaplica) |
-| `DELETE /:id` | **ADMIN** ou **GERENTE** | Remove e reverte saldo |
+`ENTRADA` / `SAIDA` atualizando saldo. Escrita: **ADMIN** ou **GERENTE**.
 
-### Campanhas (`/v1/campanhas`)
+### Campanhas — `/v1/campanhas`
 
-| Método | Quem pode | Descrição |
-|--------|-----------|-----------|
-| `GET` | Qualquer autenticado | Lista; filtros `?ativas`, `?unidade_id` |
-| `GET /:id` | Qualquer autenticado | Detalhe |
-| `POST` | **ADMIN** ou **GERENTE** | Cria campanha promocional |
-| `PUT /:id` | **ADMIN** ou **GERENTE** | Atualiza |
-| `DELETE /:id` | **ADMIN** ou **GERENTE** | Remove |
+Desconto percentual; filtros `?ativas`, `?unidade_id`. Escrita: **ADMIN** ou **GERENTE**.
 
-### Pedidos (`/v1/pedidos`)
+### Pedidos — `/v1/pedidos`
 
-| Método | Quem pode | Descrição |
-|--------|-----------|-----------|
-| `GET` | Por perfil | CLIENTE: só os seus; ADMIN/GERENTE: todos; COZINHA/BALCAO: da unidade |
-| `GET /:id` | Por perfil | Detalhe com itens |
-| `POST` | Qualquer autenticado | Cria pedido, baixa estoque; opcional `campanha_id` |
-| `PUT /:id` | Regras de status | Atualiza status (máquina de estados) |
-| `DELETE /:id` | **ADMIN** | Remove com restrições |
+Multicanal (`APP`, `TOTEM`, `BALCAO`, `PICKUP`, `WEB`). Status:  
+`AGUARDANDO_PAGAMENTO` → `EM_PREPARO` → `PRONTO` → `ENTREGUE` / `CANCELADO`
 
-**Canais:** `APP`, `TOTEM`, `BALCAO`, `PICKUP`, `WEB`
+- **CLIENTE**: só os seus
+- **COZINHA/BALCAO**: da unidade vinculada
+- **ADMIN/GERENTE**: visão ampla
 
-**Status:** `AGUARDANDO_PAGAMENTO` → `EM_PREPARO` → `PRONTO` → `ENTREGUE` / `CANCELADO`
+### Pagamentos (mock) — `/v1/pagamentos`
 
-### Pagamentos (`/v1/pagamentos`) — mock de gateway
+- `POST` com `resultado_mock`: `APROVADO` ou `NEGADO`
+- Pedido precisa estar em `AGUARDANDO_PAGAMENTO`
+- **APROVADO** → `EM_PREPARO` + pontos de fidelidade (se tiver consentimento)
+- **NEGADO** → cancela e devolve estoque
 
-| Método | Quem pode | Descrição |
-|--------|-----------|-----------|
-| `GET` | Por perfil | ADMIN/GERENTE: todos; demais: só dos próprios pedidos |
-| `GET /:id` | Por perfil | Detalhe por UUID |
-| `POST` | Dono do pedido ou **ADMIN**/**GERENTE**/**BALCAO** | Mock `resultado_mock`: `APROVADO` ou `NEGADO` |
-| `PUT /:id` | **ADMIN**, **GERENTE** ou **BALCAO** | Atualiza metadados (`metodo_pagamento`, `external_id`, `payload_retorno`) |
-| `DELETE /:id` | **ADMIN** | Remove apenas pagamento **NEGADO** |
+### Fidelidade — `/v1/fidelidade`
 
-**Regras do POST:**
+Pontos + `consentimento_explicitado` (LGPD). CRUD de escrita: **ADMIN/GERENTE**; **CLIENTE** só vê o dele.
 
-- Pedido deve estar em `AGUARDANDO_PAGAMENTO`; um pagamento por pedido
-- **APROVADO** → pedido `EM_PREPARO`; credita fidelidade se houver consentimento
-- **NEGADO** → pedido `CANCELADO` e restaura estoque
-- Resposta `201`: `{ pagamento, pedido }`
+### Auditoria (só leitura) — `/v1/logs-auditoria`
 
-### Fidelidade (`/v1/fidelidade`)
-
-| Método | Quem pode | Descrição |
-|--------|-----------|-----------|
-| `GET` | Por perfil | ADMIN/GERENTE: todos; CLIENTE: só o próprio |
-| `GET /:id` | Por perfil | Detalhe por UUID |
-| `POST` | **ADMIN** ou **GERENTE** | Cria registro (um por cliente) |
-| `PUT /:id` | **ADMIN** ou **GERENTE** | Saldo, consentimento LGPD, `ajuste_pontos_delta` |
-| `DELETE /:id` | **ADMIN** | Remove registro |
-
-**Consentimento:** com `consentimento_explicitado: true`, pagamentos aprovados creditam pontos (`floor(valor_total)`).
+**ADMIN** ou **GERENTE**. Lista e detalhe; os logs são gravados sozinhos nas mutações (POST/PUT/DELETE).
 
 ---
 
-## Exemplos rápidos
+## Exemplos que testei no Insomnia/Swagger
 
-### Login
+**Login**
 
 ```json
 POST /v1/auth/login
 { "email": "admin@raizes.com", "senha": "Admin@123" }
 ```
 
-### Pedido com campanha
+**Pedido**
 
 ```http
 Authorization: Bearer <accessToken>
@@ -181,14 +163,13 @@ Authorization: Bearer <accessToken>
 ```json
 POST /v1/pedidos
 {
-  "unidade_id": "<uuid>",
+  "unidade_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
   "canalPedido": "APP",
-  "campanha_id": "<uuid-opcional>",
-  "itens": [{ "produto_id": "<uuid>", "quantidade": 2 }]
+  "itens": [{ "produto_id": "<uuid-do-produto>", "quantidade": 1 }]
 }
 ```
 
-### Pagamento mock
+**Pagamento aprovado**
 
 ```json
 POST /v1/pagamentos
@@ -199,7 +180,7 @@ POST /v1/pagamentos
 }
 ```
 
-### Cadastro de fidelidade
+**Fidelidade do cliente demo**
 
 ```json
 POST /v1/fidelidade
@@ -211,44 +192,58 @@ POST /v1/fidelidade
 
 ---
 
-## Estrutura do projeto
+## Como o código está organizado
 
 ```
 src/
-  app.ts              # Fastify, JWT, Swagger, rotas /v1
-  routes/             # auth, hello, users, unidades, produtos,
-                        # estoque, movimentacoes-estoque, campanhas,
-                        # pedidos, pagamentos, fidelidade
-  middlewares/        # authenticate (JWT)
-  authz/              # perfis (ADMIN, GERENTE)
-  http/               # erros padronizados
-  services/           # auditoria
-  utils/              # hash de senha
+  app.ts              # Fastify, JWT, Swagger, registra /v1
+  server.ts           # Sobe o HTTP
+  database.ts         # Knex
+  routes/             # Uma pasta por módulo (auth, pedidos, etc.)
+  middlewares/        # authenticate.ts (JWT)
+  authz/              # Checagem de perfil
+  http/errors.ts      # Erros padronizados { error, message }
+  services/           # audit-log.ts
+  utils/              # hash de senha (scrypt)
 db/
-  migrations/         # schema completo
-  seeds/              # usuários e unidade demo
+  migrations/         # Todas as tabelas do enunciado
+  seeds/              # Usuários + unidade demo
+docs/                 # Diagramas + Postman
+test/                 # Vitest (estrutura pronta, poucos testes ainda)
 ```
 
 ---
 
-## Estado do desenvolvimento
+## Material que consultei (organização da API)
 
-**Implementado:**
+Montei as rotas pensando no que vi na **Rocketseat** (curso de Node), principalmente a parte de **HTTP e rotas**: separar arquivos por recurso, responder com status certo e manter JSON previsível (`error` + `message` quando dá ruim).
 
-- Autenticação JWT + Swagger (`/documentation`)
-- CRUD: usuários, unidades, produtos, estoque, movimentações, campanhas, pedidos, pagamentos, fidelidade
-- Pedidos com itens, desconto de campanha, baixa/devolução de estoque
-- Pagamentos mock com transição de status do pedido e crédito de fidelidade
-- Programa de fidelidade com consentimento LGPD e ajuste de pontos
-- Auditoria nas mutações; rotas em **`/v1`**
+- Site: [rocketseat.com.br](https://www.rocketseat.com.br/)
 
-**Ainda falta** (migrations já existem):
+Não é cópia linha a linha — adaptei pro enunciado da faculdade (perfis, pedidos, estoque, LGPD na fidelidade, etc.).
 
-- **Logs de auditoria** — leitura (`GET /v1/logs-auditoria`)
-- Rota raiz `GET /`
+---
+
+## O que já está pronto e o que ainda dá pra melhorar
+
+**Já implementei (escopo da API):**
+
+- Login JWT + Swagger
+- CRUDs: usuários, unidades, produtos, estoque, movimentações, campanhas, pedidos, pagamentos, fidelidade
+- Consulta de logs de auditoria
+- Auditoria gravando nas alterações importantes
+- Migrations + seed para testar sem cadastrar tudo na mão
+
+**Ainda não fiz / ficou fraco (honestidade de projeto de faculdade):**
+
+- **Testes automatizados** — a pasta `test/` existe e o `npm test` roda, mas quase não tem caso de teste escrito ainda; hoje valido mais no Swagger e no Postman
+- **Seed de fidelidade** — dá pra criar via API; não coloquei na seed inicial
+- **Coleção Postman** — está em `docs/`, mas pode precisar de ajuste fino de UUIDs depois do seed
+
+Se no futuro sobrar tempo, o próximo passo natural seria escrever uns testes de login + criar pedido + pagamento mock.
 
 ---
 
 ## Licença
 
-ISC (conforme `package.json`).
+ISC (ver `package.json`).

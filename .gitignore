@@ -10,3 +10,6 @@ db/*.db
 build
 
 /base
+
+/docs/puml
+/docs/imgs
