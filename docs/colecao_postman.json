@@ -8638,7 +8638,7 @@
     },
     "servers": [
         {
-            "url": "/v1",
+            "url": "http://localhost:3334/v1",
             "description": "Versão atual da API"
         }
     ],
